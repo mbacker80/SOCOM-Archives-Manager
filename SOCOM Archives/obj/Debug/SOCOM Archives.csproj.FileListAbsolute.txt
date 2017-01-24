@@ -1,0 +1,9 @@
+c:\users\dom\documents\visual studio 2015\Projects\SOCOM Archives\SOCOM Archives\bin\Debug\SOCOM Archives.exe.config
+c:\users\dom\documents\visual studio 2015\Projects\SOCOM Archives\SOCOM Archives\bin\Debug\SOCOM Archives.exe
+c:\users\dom\documents\visual studio 2015\Projects\SOCOM Archives\SOCOM Archives\bin\Debug\SOCOM Archives.pdb
+c:\users\dom\documents\visual studio 2015\Projects\SOCOM Archives\SOCOM Archives\obj\Debug\SOCOM Archives.csprojResolveAssemblyReference.cache
+c:\users\dom\documents\visual studio 2015\Projects\SOCOM Archives\SOCOM Archives\obj\Debug\SOCOM_Archives.Form1.resources
+c:\users\dom\documents\visual studio 2015\Projects\SOCOM Archives\SOCOM Archives\obj\Debug\SOCOM_Archives.Properties.Resources.resources
+c:\users\dom\documents\visual studio 2015\Projects\SOCOM Archives\SOCOM Archives\obj\Debug\SOCOM Archives.csproj.GenerateResource.Cache
+c:\users\dom\documents\visual studio 2015\Projects\SOCOM Archives\SOCOM Archives\obj\Debug\SOCOM Archives.exe
+c:\users\dom\documents\visual studio 2015\Projects\SOCOM Archives\SOCOM Archives\obj\Debug\SOCOM Archives.pdb
