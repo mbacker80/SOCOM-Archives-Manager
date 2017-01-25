@@ -434,6 +434,15 @@ namespace SOCOM_Archives
                 details += Convert.ToChar(0x0d);
                 details += Convert.ToChar(0x0a);
 
+                CA_Checksums CACheckSum = new CA_Checksums();
+                uint cs = CACheckSum.GenerateChecksum(ArchiveFiles1[index].Contents, ArchiveFiles1[index].Size);
+
+
+                details += Convert.ToChar(0x0d);
+                details += Convert.ToChar(0x0a);
+                details += "Generated Checksum: " + cs.ToString("X8");
+                details += Convert.ToChar(0x0d);
+                details += Convert.ToChar(0x0a);
 
                 return details;
             }
