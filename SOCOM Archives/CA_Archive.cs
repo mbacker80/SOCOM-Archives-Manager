@@ -11,21 +11,23 @@ namespace SOCOM_Archives
         private Header_Type1 ArchiveHead1; private File_Type1[] ArchiveFiles1;
         private Header_Type2 ArchiveHead2; private File_Type2[] ArchiveFiles2;
         private string ArchiveBrowsePath; private int ArchiveOpen; private ArchiveFolder DirectoryListings;
+        
 
         public struct Header_Type1
         {
             public uint MainHeaderSize;
             public uint FileHeaderSize;
 
-            public uint unknown1;
+            public uint ArchiveVersion;
 
             public uint ArchiveHeaderSize;
             public uint BodySize;
 
-            public uint unknownID;
+            public uint unusedID;
 
-            public uint empty;
-            public uint unknown2;
+            public uint Compression;
+            public UInt16 Errors;
+            public UInt16 Warnings;
 
             public uint[] padding;
 
@@ -37,7 +39,7 @@ namespace SOCOM_Archives
             public string FullPath;
             public byte[] Padding;
             public uint VarName;
-            public uint unknown1;
+            public uint dbID;
             public uint Entry;
             public uint Size;
             public uint ChecksumV1;
@@ -97,6 +99,32 @@ namespace SOCOM_Archives
             return LoadArchive(fData);
         }
 
+        public void NewArchive(int type)
+        {
+            if (type == 1)
+            {
+                byte[] blank = new byte[0xc8];
+
+                blank[0] = 0xc8;
+                blank[4] = 0x58;
+                blank[8] = 6;
+                blank[0x17] = 0x12; blank[0x16] = 0x34; blank[0x15] = 0x56; blank[0x14] = 0x78;
+
+                LoadArchive(blank);
+            }
+            else if (type == 2)
+            {
+                byte[] blank = new byte[0xfc];
+
+                blank[0] = 0xfc;
+                blank[4] = 0x01;
+                blank[11] = 0x12; blank[10] = 0x34; blank[9] = 0x56; blank[8] = 0x78;
+                blank[12] = 0x02;
+
+                LoadArchive(blank);
+            }
+        }
+
         public int LoadArchive(byte[] fData)
         {
             uint i = 0;
@@ -108,12 +136,13 @@ namespace SOCOM_Archives
                 ArchiveOpen = 1;
                 ArchiveHead1.MainHeaderSize = BitConverter.ToUInt32(fData, 0);
                 ArchiveHead1.FileHeaderSize = BitConverter.ToUInt32(fData, 4);
-                ArchiveHead1.unknown1 = BitConverter.ToUInt32(fData, 8);
+                ArchiveHead1.ArchiveVersion = BitConverter.ToUInt32(fData, 8);
                 ArchiveHead1.ArchiveHeaderSize = BitConverter.ToUInt32(fData, 0xc);
                 ArchiveHead1.BodySize = BitConverter.ToUInt32(fData, 0x10);
-                ArchiveHead1.unknownID = BitConverter.ToUInt32(fData, 0x14);
-                ArchiveHead1.empty = BitConverter.ToUInt32(fData, 0x18);
-                ArchiveHead1.unknown2 = BitConverter.ToUInt32(fData, 0x1c);
+                ArchiveHead1.unusedID = BitConverter.ToUInt32(fData, 0x14);
+                ArchiveHead1.Compression = BitConverter.ToUInt32(fData, 0x18);
+                ArchiveHead1.Errors = BitConverter.ToUInt16(fData, 0x1c);
+                ArchiveHead1.Warnings = BitConverter.ToUInt16(fData, 0x1e);
                 ArchiveHead1.padding = new uint[0x2a];
                 ArchiveHead1.FileCount = BitConverter.ToUInt32(fData, 0xc4);
 
@@ -137,7 +166,7 @@ namespace SOCOM_Archives
                     ArchiveFiles1[i].Name = sp[sp.Length - 2];
 
                     ArchiveFiles1[i].VarName = BitConverter.ToUInt32(fData, Convert.ToInt32(FileHeadEntry + 0x40));
-                    ArchiveFiles1[i].unknown1 = BitConverter.ToUInt32(fData, Convert.ToInt32(FileHeadEntry + 0x44));
+                    ArchiveFiles1[i].dbID = BitConverter.ToUInt32(fData, Convert.ToInt32(FileHeadEntry + 0x44));
                     ArchiveFiles1[i].Entry = BitConverter.ToUInt32(fData, Convert.ToInt32(FileHeadEntry + 0x48));
                     ArchiveFiles1[i].Size = BitConverter.ToUInt32(fData, Convert.ToInt32(FileHeadEntry + 0x4c));
                     ArchiveFiles1[i].ChecksumV1 = BitConverter.ToUInt32(fData, Convert.ToInt32(FileHeadEntry + 0x50));
@@ -299,6 +328,314 @@ namespace SOCOM_Archives
             AddDIRListing(fPath, fIndex + 1, fName, ref CurrentDIR.SubFolders[subI], FileIndex);
         }
         
+        public void AddFile(string filePath, string archivePath, uint varName)
+        {
+            byte[] fileData;
+            uint fileSize;
+
+            if (ArchiveOpen == 0) { return; }
+
+            try { fileData = System.IO.File.ReadAllBytes(filePath); }
+            catch { return; }
+
+            fileSize = Convert.ToUInt32(fileData.Length);
+
+            if (ArchiveOpen == 1)
+            {
+                ArchiveHead1.FileCount++;
+                Array.Resize(ref ArchiveFiles1, ArchiveFiles1.Length + 1);
+
+                int fIndex = ArchiveFiles1.Length - 1;
+
+                ArchiveFiles1[fIndex].FullPath = archivePath.Replace("z:/","");
+                ArchiveFiles1[fIndex].FullPath = ArchiveFiles1[fIndex].FullPath.Replace("/", "\\");
+
+                string spTmp = ArchiveFiles1[fIndex].FullPath + "/";
+                spTmp = spTmp.Replace('\\', '/');
+                spTmp = spTmp.Replace("//", "/");
+                string[] sp = spTmp.Split('/');
+                ArchiveFiles1[fIndex].Name = sp[sp.Length - 2];
+
+                CA_Checksums CAChecksum = new CA_Checksums();
+
+                ArchiveFiles1[fIndex].VarName = varName;
+                ArchiveFiles1[fIndex].dbID = 0;
+                ArchiveFiles1[fIndex].Entry = 0;
+                ArchiveFiles1[fIndex].Size = fileSize;
+                ArchiveFiles1[fIndex].ChecksumV1 = CAChecksum.GenerateChecksum(fileData, fileSize);
+                ArchiveFiles1[fIndex].Empty = 0;
+
+                ArchiveFiles1[fIndex].Contents = new byte[fileSize];
+                for (int i = 0; i < fileSize; i++)
+                {
+                    ArchiveFiles1[fIndex].Contents[i] = fileData[i];
+                }
+
+                BuildDirectoryListings();
+            }
+            else if (ArchiveOpen == 2)
+            {
+                ArchiveHead2.FileCount++;
+                Array.Resize(ref ArchiveFiles2, ArchiveFiles2.Length + 1);
+
+                int fIndex = ArchiveFiles2.Length - 1;
+
+                ArchiveFiles2[fIndex].FullPath = archivePath;
+                ArchiveFiles2[fIndex].FullPath = archivePath.Replace("z:/", "");
+                ArchiveFiles2[fIndex].FullPath = ArchiveFiles2[fIndex].FullPath.Replace("/", "\\");
+                
+                string spTmp = ArchiveFiles2[fIndex].FullPath + "/";
+                spTmp = spTmp.Replace('\\', '/');
+                spTmp = spTmp.Replace("//", "/");
+                string[] sp = spTmp.Split('/');
+                ArchiveFiles2[fIndex].Name = sp[sp.Length - 2];
+                
+                ArchiveFiles2[fIndex].Entry = 0;
+                ArchiveFiles2[fIndex].Size = fileSize;
+
+                ArchiveFiles2[fIndex].Contents = new byte[fileSize];
+                for (int i = 0; i < fileSize; i++)
+                {
+                    ArchiveFiles2[fIndex].Contents[i] = fileData[i];
+                }
+
+                BuildDirectoryListings();
+            }
+        }
+
+        public void DeleteFile(string fullPath, string fileName)
+        {
+            if (ArchiveOpen == 0) { return; }
+
+            string[] splitPath = fullPath.Split('/');
+
+            DelFile(ref DirectoryListings, splitPath, 0,fileName);
+            BuildDirectoryListings();
+        }
+        private void DelFile(ref ArchiveFolder parent, string[] path, int pathI, string fName)
+        {
+            if (pathI == path.Length - 2)
+            {
+                for (int i = 0; i < parent.FileCount; i++)
+                {
+                    if (ArchiveOpen == 1)
+                    {
+                        if (ArchiveFiles1[parent.FileIndexes[i]].Name == fName)
+                        {
+                            int fIndex = parent.FileIndexes[i];
+
+                            for (int i2 = i; i2 < parent.FileCount - 1; i2++)
+                            {
+                                parent.FileIndexes[i2] = parent.FileIndexes[i2 + 1];
+                            }
+                            Array.Resize(ref parent.FileIndexes, parent.FileIndexes.Length - 1);
+                            parent.FileCount--;
+
+                            int totIndex = Convert.ToInt32(ArchiveHead1.FileCount);
+                            for (int i2 = fIndex; i2 < totIndex - 1; i2++)
+                            {
+                                ArchiveFiles1[i2] = ArchiveFiles1[i2 + 1];
+                            }
+                            ArchiveHead1.FileCount--;
+
+                            return;
+                        }
+                    }
+                    else if (ArchiveOpen == 2)
+                    {
+                        if (ArchiveFiles2[parent.FileIndexes[i]].Name == fName)
+                        {
+                            int fIndex = parent.FileIndexes[i];
+
+                            for (int i2 = i; i2 < parent.FileCount - 1; i2++)
+                            {
+                                parent.FileIndexes[i2] = parent.FileIndexes[i2 + 1];
+                            }
+                            Array.Resize(ref parent.FileIndexes, parent.FileIndexes.Length - 1);
+                            parent.FileCount--;
+
+                            int totIndex = Convert.ToInt32(ArchiveHead2.FileCount);
+                            for (int i2 = fIndex; i2 < totIndex - 1; i2++)
+                            {
+                                ArchiveFiles2[i2] = ArchiveFiles2[i2 + 1];
+                            }
+
+                            ArchiveHead2.FileCount--;
+                            Array.Resize(ref ArchiveFiles2, ArchiveFiles2.Length - 1);
+                            
+                            return;
+                        }
+                    }
+                }
+                return;
+            }
+
+            for (int i = 0; i < parent.SubFolderCount; i++)
+            {
+                if (parent.SubFolders[i].Name == path[pathI + 1])
+                {
+                    DelFile(ref parent.SubFolders[i], path, pathI + 1, fName);
+                    return;
+                }
+            }
+        }
+
+        public bool SaveArchive(string fPath)
+        {
+            if (ArchiveOpen == 0) { return false; }
+
+            try
+            {
+                if (System.IO.File.Exists(fPath))
+                    System.IO.File.Delete(fPath);
+            }
+            catch { return false; }
+
+            System.IO.BinaryWriter bw;
+            try
+            {
+                bw = new System.IO.BinaryWriter(System.IO.File.Open(fPath, System.IO.FileMode.Create));
+            }
+            catch { return false; }
+            
+            if (ArchiveOpen == 1)
+            {
+                bw.Write(Convert.ToUInt32(0x000000c8)); // Header Size
+                bw.Write(Convert.ToUInt32(0x00000058)); // File Headers Size
+                bw.Write(Convert.ToUInt32(0x00000006)); // Version
+                bw.Write(Convert.ToUInt32((ArchiveHead1.FileCount * 0x58) + 0xc8)); // Full Head Size
+
+                uint fEntry = 0;
+                uint bodySize = 0;
+                for (int i = 0; i < ArchiveHead1.FileCount; i++)
+                {
+                    bodySize += ArchiveFiles1[i].Size;
+                    fEntry += bodySize;
+                    while ((fEntry & 0xF) != 0) { fEntry += 4; bodySize += 4; }
+                }
+                bw.Write(bodySize); // Body Size
+
+                bw.Write(Convert.ToUInt32(0x4532abcd)); // ?
+                bw.Write(Convert.ToUInt32(0));          // Compression
+                bw.Write(Convert.ToUInt16(0x0000));     // Errors
+                bw.Write(Convert.ToUInt16(0x0000));     // Warnings
+
+                for (uint i = 0x20; i < 0xc4; i += 4)
+                    bw.Write(Convert.ToUInt32(0));
+
+                bw.Write(ArchiveHead1.FileCount); // File Count
+
+                /*
+                    public uint MainHeaderSize;
+                    public uint FileHeaderSize;
+            
+                    public uint unknown1;
+
+                    public uint ArchiveHeaderSize;
+                    public uint BodySize;
+            
+                    public uint unknownID;
+
+                    public uint empty;
+                    public uint unknown2;
+
+                    public uint[] padding;
+
+                    public uint FileCount;
+                */
+
+                fEntry = 0;
+                for (int i = 0; i < ArchiveHead1.FileCount; i++)
+                {
+                    bw.Write(ArchiveFiles1[i].FullPath.ToCharArray());
+                    for (int i2 = ArchiveFiles1[i].FullPath.Length; i2 < 0x40; i2++)
+                    {
+                        bw.Write(Convert.ToChar(0));
+                    }
+                    bw.Write(ArchiveFiles1[i].VarName);
+                    bw.Write(ArchiveFiles1[i].dbID);
+                    bw.Write(fEntry);
+                    bw.Write(ArchiveFiles1[i].Size);
+                    bw.Write(ArchiveFiles1[i].ChecksumV1);
+                    bw.Write(ArchiveFiles1[i].Empty);
+
+                    fEntry += ArchiveFiles1[i].Size;
+                    while ((fEntry & 0xF) != 0) { fEntry += 4; }
+                    /*
+                        public string Name;
+                        public string FullPath;
+                        public byte[] Padding;
+                        public uint VarName;
+                        public uint unknown1;
+                        public uint Entry;
+                        public uint Size;
+                        public uint ChecksumV1;
+                        public uint Empty;
+                        public byte[] Contents; 
+                    */
+                }
+
+                fEntry = 0;
+                for (int i = 0; i < ArchiveHead1.FileCount; i++)
+                {
+                    bw.Write(ArchiveFiles1[i].Contents);
+                    fEntry += ArchiveFiles1[i].Size;
+                    while ((fEntry & 0xF) != 0) { fEntry += 4; bw.Write(Convert.ToUInt32(0)); }
+                }
+                
+                bw.Close();
+            }
+            else if (ArchiveOpen == 2)
+            {
+                bw.Write(Convert.ToUInt32(0x000000fc));
+                bw.Write(ArchiveHead2.unknown1);
+                bw.Write(Convert.ToUInt32(0x12345678));
+                bw.Write(ArchiveHead2.unknown2);
+                bw.Write(ArchiveHead2.unknown3);
+                if (ArchiveHead2.Version.Length > 0)
+                {
+                    bw.Write(ArchiveHead2.Version.ToCharArray());
+                    for (int i = (ArchiveHead2.Version.Length + 0x14); i < 0x98; i++)
+                        bw.Write(Convert.ToChar(0));
+                }
+                else
+                {
+                    for (int i = 0x14; i < 0x98; i += 4)
+                        bw.Write(Convert.ToUInt32(0x00000000));
+                }
+
+                bw.Write(ArchiveHead2.FileCount);
+                bw.Write(Convert.ToUInt32(0x0000005c));
+
+                uint Entry = (ArchiveHead2.FileCount * 0x5c) + 0xa0;
+                for (int i = 0; i < ArchiveHead2.FileCount; i++)
+                {
+                    bw.Write(Convert.ToUInt32(0x0000005c));
+                    bw.Write(ArchiveFiles2[i].FullPath.ToCharArray());
+                    for (int i2 = ArchiveFiles2[i].FullPath.Length; i2 < 0x40; i2++)
+                        bw.Write(Convert.ToChar(0));
+
+                    bw.Write(Entry);
+                    bw.Write(ArchiveFiles2[i].Size);
+
+                    bw.Write(Convert.ToUInt32(0x00000000));
+                    bw.Write(Convert.ToUInt32(0x00000000));
+                    bw.Write(Convert.ToUInt32(0x00000000));
+                    bw.Write(Convert.ToUInt32(0x00000000));
+                    
+                    Entry += ArchiveFiles2[i].Size;
+                }
+                for (int i = 0; i < ArchiveHead2.FileCount; i++)
+                {
+                    bw.Write(ArchiveFiles2[i].Contents);
+                }
+
+                bw.Close();
+            }
+
+            return true;
+        }
+
         public bool ExtractFile(string fPath, int index)
         {
             if (System.IO.File.Exists(fPath))
@@ -408,6 +745,23 @@ namespace SOCOM_Archives
 
             if (ArchiveOpen == 1)
             {
+                details += "Archive Type 1";
+                details += Convert.ToChar(0x0d);
+                details += Convert.ToChar(0x0a);
+                details += "Version " + ArchiveHead1.ArchiveVersion.ToString();
+                details += Convert.ToChar(0x0d);
+                details += Convert.ToChar(0x0a);
+                details += "Compression Level ";
+                if (ArchiveHead1.Compression > 0)
+                    details += ArchiveHead1.Compression.ToString();
+                else
+                    details += "N/A";
+                details += Convert.ToChar(0x0d);
+                details += Convert.ToChar(0x0a);
+
+                details += Convert.ToChar(0x0d);
+                details += Convert.ToChar(0x0a);
+
                 details += "File: " + ArchiveFiles1[index].Name;
                 details += Convert.ToChar(0x0d);
                 details += Convert.ToChar(0x0a);
@@ -418,11 +772,11 @@ namespace SOCOM_Archives
                 details += Convert.ToChar(0x0d);
                 details += Convert.ToChar(0x0a);
 
-                details += "Uknown1: " + ArchiveFiles1[index].unknown1.ToString("X8");
+                details += "Database ID: " + ArchiveFiles1[index].dbID.ToString("X8");
                 details += Convert.ToChar(0x0d);
                 details += Convert.ToChar(0x0a);
 
-                details += "Var Name: " + HexToStr(HexReverse(ArchiveFiles1[index].VarName.ToString("X8")));
+                details += "Var Name: " + HexToStr(HexReverse(ArchiveFiles1[index].VarName.ToString("X8"))).Replace('\0', ' ');
                 details += Convert.ToChar(0x0d);
                 details += Convert.ToChar(0x0a);
 
@@ -462,6 +816,17 @@ namespace SOCOM_Archives
             }
 
             return "";
+        }
+
+        public void FixAllChecksums()
+        {
+            if (ArchiveOpen != 1) { return; }
+
+            CA_Checksums CAChecksum = new CA_Checksums();
+            for (int i = 0; i < ArchiveHead1.FileCount; i++)
+            {
+                ArchiveFiles1[i].ChecksumV1 = CAChecksum.GenerateChecksum(ArchiveFiles1[i].Contents, ArchiveFiles1[i].Size);
+            }
         }
 
         private string HexToStr(string hexStr)

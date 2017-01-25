@@ -192,5 +192,92 @@ namespace SOCOM_Archives
                 }
             }
         }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            if (lstListings.SelectedIndex < 0) { return; }
+
+            string lstName = lstListings.Items[lstListings.SelectedIndex].ToString();
+            if (lstName.Substring(0,6) != "[FILE]") { return; }
+            string fname = lstName.Substring(12, lstName.Length - 12);
+            
+            MyArchive.DeleteFile(txtBrowsePath.Text + fname, fname);
+
+            lstListings.Items.Clear();
+            string[] spc;
+            spc = MyArchive.GetDIRListing(txtBrowsePath.Text).Split(Convert.ToChar(0x0a));
+            for (int i = 0; i < spc.Length - 1; i++)
+            {
+                lstListings.Items.Add(spc[i]);
+            }
+            lblFileCount.Text = "File Count: " + MyArchive.GetFileCount().ToString();
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            DialogResult dlgResult;
+
+            openFileDialog1.FileName = "";
+            openFileDialog1.Filter = "All Files *.*|*.*";
+
+            dlgResult = openFileDialog1.ShowDialog();
+            if (dlgResult.ToString() == "Cancel") { return; }
+
+            string[] nameSplit = openFileDialog1.FileName.Split('\\');
+            string fName = nameSplit[nameSplit.Length - 1];
+
+            MyArchive.AddFile(openFileDialog1.FileName, txtBrowsePath.Text + fName, 0);
+
+            lstListings.Items.Clear();
+            string[] spc;
+            spc = MyArchive.GetDIRListing(txtBrowsePath.Text).Split(Convert.ToChar(0x0a));
+            for (int i = 0; i < spc.Length - 1; i++)
+            {
+                lstListings.Items.Add(spc[i]);
+            }
+            lblFileCount.Text = "File Count: " + MyArchive.GetFileCount().ToString();
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            DialogResult dlgResult;
+
+            saveFileDialog1.FileName = "MyArchive";
+            saveFileDialog1.Filter = ".ZDB;.ZAR|*.zdb;*.zar";
+            dlgResult = saveFileDialog1.ShowDialog();
+            if (dlgResult.ToString() == "Cancel") { return; }
+
+            MyArchive.SaveArchive(saveFileDialog1.FileName);
+        }
+
+        private void button11_Click(object sender, EventArgs e)
+        {
+            MyArchive.FixAllChecksums();
+        }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button10_Click(object sender, EventArgs e)
+        {
+            if (optTypeC8.Checked)
+                MyArchive.NewArchive(1);
+            else if (optTypeFC.Checked)
+                MyArchive.NewArchive(2);
+
+            txtBrowsePath.Text = "z:/";
+            txtArchive.Text = "<New Archive>";
+
+            lstListings.Items.Clear();
+            string[] spc;
+            spc = MyArchive.GetDIRListing(txtBrowsePath.Text).Split(Convert.ToChar(0x0a));
+            for (int i = 0; i < spc.Length - 1; i++)
+            {
+                lstListings.Items.Add(spc[i]);
+            }
+            lblFileCount.Text = "File Count: " + MyArchive.GetFileCount().ToString();
+        }
     }
 }
