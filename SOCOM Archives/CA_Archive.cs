@@ -288,6 +288,12 @@ namespace SOCOM_Archives
                     AddDIRListing(subs, 1, tmpFName, ref DirectoryListings, i);
             }
         }
+        public void AddFolder(string folderPath)
+        {
+            string tmpDIR = folderPath + "/";
+            string[] subs = tmpDIR.Split('/');
+            AddDIRListing(subs, 1, "", ref DirectoryListings, -1);
+        }
         private void AddDIRListing(string[] fPath, int fIndex, string fName, ref ArchiveFolder CurrentDIR, int FileIndex)
         {
             string debugStr = "";
@@ -313,9 +319,12 @@ namespace SOCOM_Archives
             }
             if (fIndex == fPath.Length - 1)
             {
-                CurrentDIR.FileCount++;
-                Array.Resize(ref CurrentDIR.FileIndexes, CurrentDIR.FileCount);
-                CurrentDIR.FileIndexes[CurrentDIR.FileCount - 1] = FileIndex;
+                if (fName.Length > 0)
+                {
+                    CurrentDIR.FileCount++;
+                    Array.Resize(ref CurrentDIR.FileIndexes, CurrentDIR.FileCount);
+                    CurrentDIR.FileIndexes[CurrentDIR.FileCount - 1] = FileIndex;
+                }
                 return;
             }
 

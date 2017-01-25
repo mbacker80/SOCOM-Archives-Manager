@@ -103,7 +103,7 @@
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(84, 27);
             this.button3.TabIndex = 4;
-            this.button3.Text = "Add Folder";
+            this.button3.Text = "New Folder";
             this.button3.UseVisualStyleBackColor = true;
             this.button3.Click += new System.EventHandler(this.button3_Click);
             // 
@@ -147,12 +147,13 @@
             // 
             // button4
             // 
-            this.button4.Location = new System.Drawing.Point(191, 428);
+            this.button4.Location = new System.Drawing.Point(101, 461);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(84, 27);
             this.button4.TabIndex = 9;
             this.button4.Text = "Delete Folder";
             this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
             // label2
             // 
@@ -200,7 +201,7 @@
             // 
             // button6
             // 
-            this.button6.Location = new System.Drawing.Point(191, 459);
+            this.button6.Location = new System.Drawing.Point(191, 461);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(84, 27);
             this.button6.TabIndex = 14;
@@ -216,10 +217,11 @@
             this.button7.TabIndex = 15;
             this.button7.Text = "Extract All";
             this.button7.UseVisualStyleBackColor = true;
+            this.button7.Click += new System.EventHandler(this.button7_Click);
             // 
             // button8
             // 
-            this.button8.Location = new System.Drawing.Point(101, 459);
+            this.button8.Location = new System.Drawing.Point(191, 428);
             this.button8.Name = "button8";
             this.button8.Size = new System.Drawing.Size(84, 27);
             this.button8.TabIndex = 16;

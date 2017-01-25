@@ -141,7 +141,23 @@ namespace SOCOM_Archives
 
         private void button3_Click(object sender, EventArgs e)
         {
+            if (txtBrowsePath.Text.Length > 1)
+            {
+                frmNewFolder nfolder = new frmNewFolder();
+                DialogResult dlgRet = nfolder.ShowDialog();
 
+                MyArchive.AddFolder(txtBrowsePath.Text + nfolder.FolderName);
+                nfolder.Dispose();
+
+                lstListings.Items.Clear();
+                string[] spc;
+                spc = MyArchive.GetDIRListing(txtBrowsePath.Text).Split(Convert.ToChar(0x0a));
+                for (int i = 0; i < spc.Length - 1; i++)
+                {
+                    lstListings.Items.Add(spc[i]);
+                }
+                lblFileCount.Text = "File Count: " + MyArchive.GetFileCount().ToString();
+            }
         }
 
         private void optTypeFC_CheckedChanged(object sender, EventArgs e)
@@ -257,7 +273,7 @@ namespace SOCOM_Archives
 
         private void button9_Click(object sender, EventArgs e)
         {
-
+            MessageBox.Show("Not implemented yet");
         }
 
         private void button10_Click(object sender, EventArgs e)
@@ -278,6 +294,16 @@ namespace SOCOM_Archives
                 lstListings.Items.Add(spc[i]);
             }
             lblFileCount.Text = "File Count: " + MyArchive.GetFileCount().ToString();
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Not implemented yet");
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Not implemented yet");
         }
     }
 }
