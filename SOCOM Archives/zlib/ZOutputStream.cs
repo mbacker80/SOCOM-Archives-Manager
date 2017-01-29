@@ -150,7 +150,7 @@ namespace SOCOM_Archives.zlib
                 
                 out_Renamed.Write(buf, 0, bufsize - z.avail_out);
             }
-            while ((z.avail_in > 0 || z.avail_out == 0) && (err != 1));
+            while ((z.avail_in > 0 || z.avail_out == 0) && (err != 1)); // Added end of stream check
         }
 
         public virtual void finish()

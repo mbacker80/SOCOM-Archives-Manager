@@ -14,7 +14,6 @@ namespace SOCOM_Archives
 {
     public partial class Form1 : Form
     {
-
         private CA_Archive MyArchive = new CA_Archive();
         
         public Form1()
