@@ -11,7 +11,6 @@ namespace SOCOM_Archives
     {
         private Header_Type1 ArchiveHead1;
         private File_Type1[] ArchiveFiles1;
-        private File_Type1 ArchiveFiles1
         private Header_Type2 ArchiveHead2; private File_Type2[] ArchiveFiles2;
         private string ArchiveBrowsePath; private int ArchiveOpen;
         private ArchiveFolder DirectoryListings;
