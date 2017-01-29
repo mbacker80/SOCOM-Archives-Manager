@@ -634,6 +634,53 @@ namespace SOCOM_Archives
             return true;
         }
 
+        public bool SetFileBytes(int index, ref byte[] newData)
+        {
+            if (ArchiveOpen == 1)
+            {
+                ArchiveFiles1[index].Contents = new byte[newData.Length];
+                ArchiveFiles1[index].Size = Convert.ToUInt32(newData.Length);
+                for (int i = 0; i < ArchiveFiles1[index].Size; i++)
+                    ArchiveFiles1[index].Contents[i] = newData[i];
+
+                return true;
+            }
+            else if (ArchiveOpen == 2)
+            {
+                ArchiveFiles2[index].Contents = new byte[newData.Length];
+                ArchiveFiles2[index].Size = Convert.ToUInt32(newData.Length);
+                for (int i = 0; i < ArchiveFiles2[index].Size; i++)
+                    ArchiveFiles2[index].Contents[i] = newData[i];
+
+                return true;
+            }
+            
+            return false;
+        }
+
+        public bool GetFileBytes(int index, out byte[] ret)
+        {
+            if (ArchiveOpen == 1)
+            {
+                ret = new byte[ArchiveFiles1[index].Size];
+                for (int i = 0; i < ArchiveFiles1[index].Size; i++)
+                    ret[i] = ArchiveFiles1[index].Contents[i];
+
+                return true;
+            }
+            else if (ArchiveOpen == 2)
+            {
+                ret = new byte[ArchiveFiles2[index].Size];
+                for (int i = 0; i < ArchiveFiles2[index].Size; i++)
+                    ret[i] = ArchiveFiles2[index].Contents[i];
+
+                return true;
+            }
+
+            ret = new byte[0];
+            return false;
+        }
+
         public bool ExtractFile(string fPath, int index)
         {
             if (File.Exists(fPath))
