@@ -3,41 +3,38 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace SOCOM_Archives
 {
     class CA_Archive
     {
-        private Header_Type1 ArchiveHead1; private File_Type1[] ArchiveFiles1;
+        private Header_Type1 ArchiveHead1;
+        private File_Type1[] ArchiveFiles1;
+        private File_Type1 ArchiveFiles1
         private Header_Type2 ArchiveHead2; private File_Type2[] ArchiveFiles2;
-        private string ArchiveBrowsePath; private int ArchiveOpen; private ArchiveFolder DirectoryListings;
+        private string ArchiveBrowsePath; private int ArchiveOpen;
+        private ArchiveFolder DirectoryListings;
         
 
         public struct Header_Type1
         {
             public uint MainHeaderSize;
             public uint FileHeaderSize;
-
             public uint ArchiveVersion;
-
             public uint ArchiveHeaderSize;
             public uint BodySize;
-
             public uint unusedID;
-
             public uint Compression;
             public UInt16 Errors;
             public UInt16 Warnings;
-
             public uint[] padding;
-
             public uint FileCount;
         }
         private struct File_Type1
         {
             public string Name;
             public string FullPath;
-            public byte[] Padding;
             public uint VarName;
             public uint dbID;
             public uint Entry;
@@ -55,8 +52,6 @@ namespace SOCOM_Archives
             public uint unknown2;
             public uint unknown3;
             public string Version;
-            public uint[] padding;
-
             public uint FileCount;
             public uint FileHeaderSize;
         }
@@ -76,7 +71,6 @@ namespace SOCOM_Archives
             public string Name;
             public int FileCount;
             public int SubFolderCount;
-
             public ArchiveFolder[] SubFolders;
             public int[] FileIndexes;
         }
@@ -84,18 +78,16 @@ namespace SOCOM_Archives
         public int OpenArchive(string fName)
         {
             byte[] fData;
-            if (System.IO.File.Exists(fName) == false) { return -1; }
 
             try
             {
-                fData = System.IO.File.ReadAllBytes(fName);
+                fData = File.ReadAllBytes(fName);
             }
             catch
             {
                 return -1;
             }
             
-
             return LoadArchive(fData);
         }
 
@@ -174,9 +166,7 @@ namespace SOCOM_Archives
                     ArchiveFiles1[i].Contents = new byte[ArchiveFiles1[i].Size];
 
                     for (i2 = 0; i2 < ArchiveFiles1[i].Size; i2++)
-                    {
                         ArchiveFiles1[i].Contents[i2] = fData[ArchiveFiles1[i].Entry + ArchiveHead1.ArchiveHeaderSize + i2];
-                    }
 
                     FileHeadEntry += ArchiveHead1.FileHeaderSize;
                 }
@@ -251,17 +241,11 @@ namespace SOCOM_Archives
             uint totalFiles = 0;
 
             if (ArchiveOpen == 1)
-            {
                 totalFiles = ArchiveHead1.FileCount;
-            }
             else if (ArchiveOpen == 2)
-            {
                 totalFiles = ArchiveHead2.FileCount;
-            }
             else
-            {
                 return;
-            }
 
             DirectoryListings = new ArchiveFolder();
             DirectoryListings.Name = "z:";
@@ -271,8 +255,11 @@ namespace SOCOM_Archives
                 string[] subs;
                 string tmpDIR = "";
                 string tmpFName = "";
-                if (ArchiveOpen == 1) { tmpDIR = ArchiveFiles1[i].FullPath; tmpFName = ArchiveFiles1[i].Name; }
-                if (ArchiveOpen == 2) { tmpDIR = ArchiveFiles2[i].FullPath; tmpFName = ArchiveFiles2[i].Name; }
+
+                if (ArchiveOpen == 1)
+                    tmpDIR = ArchiveFiles1[i].FullPath; tmpFName = ArchiveFiles1[i].Name;
+                if (ArchiveOpen == 2)
+                    tmpDIR = ArchiveFiles2[i].FullPath; tmpFName = ArchiveFiles2[i].Name; 
 
                 tmpDIR = tmpDIR.Substring(0, tmpDIR.Length - tmpFName.Length);
 
@@ -296,7 +283,7 @@ namespace SOCOM_Archives
         }
         private void AddDIRListing(string[] fPath, int fIndex, string fName, ref ArchiveFolder CurrentDIR, int FileIndex)
         {
-            string debugStr = "";
+            string debugStr = string.Empty;
             for (int i = 0; i < CurrentDIR.SubFolderCount; i++)
             {
                 if (CurrentDIR.SubFolders[i].Name == fPath[fIndex])
@@ -304,9 +291,7 @@ namespace SOCOM_Archives
                     if (fIndex == fPath.Length - 1)
                     {
                         for (int i2 = 0; i2 < fIndex; i2++)
-                        {
                             debugStr += fPath[i2] + "/";
-                        }
                         Console.WriteLine("(To-Do 1) Add File: " + debugStr);
                         return;
                     }
@@ -344,8 +329,12 @@ namespace SOCOM_Archives
 
             if (ArchiveOpen == 0) { return; }
 
-            try { fileData = System.IO.File.ReadAllBytes(filePath); }
-            catch { return; }
+            try {
+                fileData = File.ReadAllBytes(filePath);
+            }
+            catch {
+                return;
+            }
 
             fileSize = Convert.ToUInt32(fileData.Length);
 
@@ -495,15 +484,15 @@ namespace SOCOM_Archives
 
             try
             {
-                if (System.IO.File.Exists(fPath))
-                    System.IO.File.Delete(fPath);
+                if (File.Exists(fPath))
+                    File.Delete(fPath);
             }
             catch { return false; }
 
-            System.IO.BinaryWriter bw;
+            BinaryWriter bw;
             try
             {
-                bw = new System.IO.BinaryWriter(System.IO.File.Open(fPath, System.IO.FileMode.Create));
+                bw = new BinaryWriter(File.Open(fPath, FileMode.Create));
             }
             catch { return false; }
             
@@ -647,34 +636,28 @@ namespace SOCOM_Archives
 
         public bool ExtractFile(string fPath, int index)
         {
-            if (System.IO.File.Exists(fPath))
-            {
-                try { System.IO.File.Delete(fPath); } catch { return false; }
-            }
-
+            if (File.Exists(fPath))
+                try {
+                    File.Delete(fPath);
+                }
+                catch {
+                    return false;
+                }
             try
             {
                 if (ArchiveOpen == 1)
-                {
-                    System.IO.File.WriteAllBytes(fPath, ArchiveFiles1[index].Contents);
-                }
+                    File.WriteAllBytes(fPath, ArchiveFiles1[index].Contents);
                 else if (ArchiveOpen == 2)
-                {
-                    System.IO.File.WriteAllBytes(fPath, ArchiveFiles2[index].Contents);
-                }
+                    File.WriteAllBytes(fPath, ArchiveFiles2[index].Contents);
             }
             catch
             {
                 return false;
             }
-
             return true;
         }
 
-        public int GetArchiveType()
-        {
-            return ArchiveOpen;
-        }
+        public int GetArchiveType() => ArchiveOpen;
 
         public int GetFileCount()
         {
@@ -688,10 +671,8 @@ namespace SOCOM_Archives
 
         public string GetDIRListing(string dirPath)
         {
-            string dirTmp = dirPath + "/";
-            dirTmp = dirTmp.Replace('\\', '/');
-            dirTmp = dirTmp.Replace("//", "/");
-            string[] dirSP = dirTmp.Split('/');
+            var dirSP = $"{dirPath}//".Replace(@"\\", @"/")
+                .Split(new string[] { @"/" }, StringSplitOptions.RemoveEmptyEntries);
 
             return GetDIRList(ref dirSP, 0, ref DirectoryListings);
         }
@@ -704,27 +685,26 @@ namespace SOCOM_Archives
                 for (int i = 0; i < folder.SubFolderCount; i++)
                 {
                     if (folder.SubFolders[i].Name == path[pathI + 1])
-                    {
                         return GetDIRList(ref path, pathI + 1, ref folder.SubFolders[i]);
-                    }
                 }
             //}
             //Console.WriteLine("2) " + folder.Name + " == " + path[pathI] + "; " + (path.Length - 2).ToString() + "; " + pathI.ToString());
 
-            string listRet = "";
+            string listRet = string.Empty;
             if ((pathI == (path.Length - 2)) && (folder.Name == path[pathI]))
             {
                 listRet += "[DIR] ." + Convert.ToChar(0x0a);
                 listRet += "[DIR] .." + Convert.ToChar(0x0a);
+
                 for (int i = 0; i < folder.SubFolderCount; i++)
-                {
                     listRet += "[DIR] " + folder.SubFolders[i].Name + Convert.ToChar(0x0a);
-                }
                 for (int i = 0; i < folder.FileCount; i++)
-                {
-                    if (ArchiveOpen == 1) { listRet += "[FILE] " + folder.FileIndexes[i].ToString("X4") + " " + ArchiveFiles1[folder.FileIndexes[i]].Name + Convert.ToChar(0x0a); }
-                    else if (ArchiveOpen == 2) { listRet += "[FILE] " + folder.FileIndexes[i].ToString("X4") + " " + ArchiveFiles2[folder.FileIndexes[i]].Name + Convert.ToChar(0x0a); }
-                }
+                    if (ArchiveOpen == 1) 
+                        listRet += "[FILE] " + folder.FileIndexes[i].ToString("X4") + " " + ArchiveFiles1[folder.FileIndexes[i]].Name + Convert.ToChar(0x0a);
+                    
+                    else if (ArchiveOpen == 2)
+                        listRet += "[FILE] " + folder.FileIndexes[i].ToString("X4") + " " + ArchiveFiles2[folder.FileIndexes[i]].Name + Convert.ToChar(0x0a); 
+
                 return listRet;
             }
 
@@ -736,15 +716,11 @@ namespace SOCOM_Archives
         public string GetFileName(int index)
         {
             if (ArchiveOpen == 1)
-            {
                 return ArchiveFiles1[index].Name;
-            }
             else if (ArchiveOpen == 2)
-            {
                 return ArchiveFiles2[index].Name;
-            }
 
-            return "";
+            return string.Empty;
         }
         
 
@@ -760,11 +736,13 @@ namespace SOCOM_Archives
                 details += "Version " + ArchiveHead1.ArchiveVersion.ToString();
                 details += Convert.ToChar(0x0d);
                 details += Convert.ToChar(0x0a);
+
                 details += "Compression Level ";
                 if (ArchiveHead1.Compression > 0)
                     details += ArchiveHead1.Compression.ToString();
                 else
                     details += "N/A";
+
                 details += Convert.ToChar(0x0d);
                 details += Convert.ToChar(0x0a);
 
@@ -800,7 +778,6 @@ namespace SOCOM_Archives
                 CA_Checksums CACheckSum = new CA_Checksums();
                 uint cs = CACheckSum.GenerateChecksum(ArchiveFiles1[index].Contents, ArchiveFiles1[index].Size);
 
-
                 details += Convert.ToChar(0x0d);
                 details += Convert.ToChar(0x0a);
                 details += "Generated Checksum: " + cs.ToString("X8");
@@ -833,29 +810,23 @@ namespace SOCOM_Archives
 
             CA_Checksums CAChecksum = new CA_Checksums();
             for (int i = 0; i < ArchiveHead1.FileCount; i++)
-            {
                 ArchiveFiles1[i].ChecksumV1 = CAChecksum.GenerateChecksum(ArchiveFiles1[i].Contents, ArchiveFiles1[i].Size);
-            }
         }
 
         private string HexToStr(string hexStr)
         {
-            string ret = "";
+            string ret = string.Empty;
             for (int i = 0; i < hexStr.Length; i += 2)
-            {
                 ret += Convert.ToChar(Convert.ToByte(hexStr.Substring(i, 2), 16));
-            }
 
             return ret;
         }
 
         private string HexReverse(string hexStr)
         {
-            string ret = "";
+            string ret = string.Empty;
             for (int i = 0; i < hexStr.Length; i += 2)
-            {
                 ret = hexStr.Substring(i, 2) + ret;
-            }
 
             return ret;
         }
