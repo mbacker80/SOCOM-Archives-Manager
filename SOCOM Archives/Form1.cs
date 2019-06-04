@@ -275,7 +275,38 @@ namespace SOCOM_Archives
 
         private void button9_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Not implemented yet");
+            if (lstListings.Items.Count <= 0) { return; }
+
+            int i;
+            int fIndex; int exCount;
+            string[] spc;
+            DialogResult dlgRet;
+
+            dlgRet = folderBrowserDialog1.ShowDialog();
+            if (dlgRet.ToString() != "OK") { return; }
+
+            exCount = 0;
+            for (i = 2; i < lstListings.Items.Count; i++)
+            {
+                spc = lstListings.Items[i].ToString().Split(' ');
+                if (spc[0] == "[FILE]")
+                {
+                    fIndex = Convert.ToInt32(spc[1], 16);
+                    if (!MyArchive.ExtractFile(folderBrowserDialog1.SelectedPath + "\\" + spc[2], fIndex))
+                    {
+                        MessageBox.Show("Extraction Failed!");
+                        return;
+                    }
+                    exCount++;
+                }
+                else if (spc[0] == "[DIR]")
+                {
+                    if (!System.IO.Directory.Exists(folderBrowserDialog1.SelectedPath + "\\" + spc[1]))
+                        System.IO.Directory.CreateDirectory(folderBrowserDialog1.SelectedPath + "\\" + spc[1]);
+                }
+            }
+
+            MessageBox.Show("Extracted [" + exCount.ToString() + "] Files Successfully!");
         }
 
         private void button10_Click(object sender, EventArgs e)
